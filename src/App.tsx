@@ -302,7 +302,7 @@ function App() {
 
     // Build cart summary
     const itemLines = cart.map(item =>
-      `  • ${item.name} - ${item.sugar || '无糖度'} - ${item.sizeLabel} - ¥${item.price * item.quantity} x${item.quantity}`
+      `  • ${item.name} - ${item.temperature} - ${item.sugar || '无糖度'} - ${item.sizeLabel} - ¥${item.price} x${item.quantity}`
     ).join('\n');
 
     const message =

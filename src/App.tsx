@@ -213,6 +213,28 @@ type CartItem = {
   quantity: number;
 };
 
+// ─── Google Sheets Web App ───────────────────────────────────────────────────
+const GSHEET_URL =
+  'https://script.google.com/macros/s/AKfycbyXzTDzJQcaXnYV0PPrFPRUDs1Pc-v9o4hCwJ-Dx4IxuaV9rMzy2JqalhSxy38i12cj/exec';
+
+async function sendToGSheet(cartItems: CartItem[]) {
+  const items = cartItems.map(item => ({
+    name: item.name,
+    quantity: item.quantity,
+    price: item.price,
+  }));
+  try {
+    await fetch(GSHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+  } catch (_) {
+    // Gửi GSheet thất bại — không block luồng chính
+  }
+}
+
 function App() {
   const { teas, storeOpen, loading } = useStoreData();
   const [closedToast, setClosedToast] = useState(false);
@@ -309,6 +331,9 @@ function App() {
     } catch (_) {
       // Gửi thất bại vẫn cho phép tiếp tục để không block khách
     }
+
+    // Ghi đơn vào Google Sheets
+    await sendToGSheet(cart);
 
     setIsSending(false);
     setIsCheckoutOpen(false);

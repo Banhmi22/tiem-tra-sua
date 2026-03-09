@@ -83,11 +83,18 @@ function OptionModal({ tea, onClose, onConfirm }: {
   };
   const price = priceMap[size] ?? tea.prices.M;
 
+  const sizeLabelMap: Record<string, string> = {
+    '小': '小杯',
+    '中': '中杯',
+    '大': '大杯',
+  };
+
   const handleConfirm = () => {
     onConfirm({
       teaId: tea.id,
       name: tea.name,
       size,
+      sizeLabel: sizeLabelMap[size] ?? '中杯',
       temperature: tea.iceOnly ? '冰' : temp,
       sugar: hasSugar ? sugar : '',
       price,
@@ -199,6 +206,7 @@ type CartItem = {
   teaId: string;
   name: string;
   size: string;
+  sizeLabel: string;
   temperature: string;
   sugar: string;
   price: number;
@@ -272,7 +280,7 @@ function App() {
 
     // Build cart summary
     const itemLines = cart.map(item =>
-      `  • ${item.name} (${item.size === 'M' ? '中杯' : '大杯'}, ${item.temperature}, ${item.sugar}) x${item.quantity} — ¥${item.price * item.quantity}`
+      `  • ${item.name} - ${item.sugar || '无糖度'} - ${item.sizeLabel} - ¥${item.price * item.quantity} x${item.quantity}`
     ).join('\n');
 
     const message =
@@ -563,7 +571,7 @@ function App() {
                       <div className="flex-1">
                         <h4 className="font-bold text-stone-800 text-lg">{item.name}</h4>
                         <p className="text-stone-500 text-sm mb-2">
-                          {item.temperature}{item.sugar ? ` · ${item.sugar}` : ''} · {item.size === 'M' ? '中杯' : '大杯'}
+                          {item.temperature}{item.sugar ? ` · ${item.sugar}` : ''} · {item.sizeLabel}
                         </p>
                         <p className="font-black text-pink-600">¥{item.price}</p>
                       </div>

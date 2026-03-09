@@ -285,6 +285,7 @@ function App() {
 
     const message =
 `🔔 CÓ ĐƠN HÀNG MỚI!
+👤 Người đặt: ${checkoutForm.name.trim() || 'Khách không để lại tên'}
 
 🧋 Sản phẩm:\n${itemLines}\n💰 Tổng: ¥${cartTotal}
 

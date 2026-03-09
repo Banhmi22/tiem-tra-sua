@@ -63,7 +63,7 @@ function MenuCard({ tea, index, onOpenOptions }: {
 }
 
 // ─── Option picker modal ──────────────────────────────────────────────────────
-const SUGARS = ['不加糖', '半糖', '七分糖', '全糖'];
+const SUGARS = ['不加糖', '三分糖', '五分糖', '七分糖', '全糖'];
 
 function OptionModal({ tea, onClose, onConfirm }: {
   tea: Tea;
@@ -73,6 +73,8 @@ function OptionModal({ tea, onClose, onConfirm }: {
   const [size, setSize]   = useState<string>('中');
   const [sugar, setSugar] = useState('全糖');
   const [temp, setTemp]   = useState('冰');
+
+  const hasSugar = tea.sugarChoice === true;
 
   const priceMap: Record<string, number> = {
     '小': tea.prices.S,
@@ -87,7 +89,7 @@ function OptionModal({ tea, onClose, onConfirm }: {
       name: tea.name,
       size,
       temperature: tea.iceOnly ? '冰' : temp,
-      sugar,
+      sugar: hasSugar ? sugar : '',
       price,
       quantity: 1,
       animal: tea.animal,
@@ -95,8 +97,8 @@ function OptionModal({ tea, onClose, onConfirm }: {
   };
 
   function PickerRow<T extends string>({
-    label, options, value, onChange
-  }: { label: string; options: T[]; value: T; onChange: (v: T) => void }) {
+    label, options, value, onChange, sugarRow = false
+  }: { label: string; options: T[]; value: T; onChange: (v: T) => void; sugarRow?: boolean }) {
     return (
       <div className="mb-5">
         <p className="text-xs font-bold text-stone-500 uppercase tracking-widest mb-2">{label}</p>
@@ -107,8 +109,12 @@ function OptionModal({ tea, onClose, onConfirm }: {
               onClick={() => onChange(opt)}
               className={`flex items-center gap-1 px-3.5 py-2 rounded-full text-sm font-bold border-2 transition-all duration-200 ${
                 value === opt
-                  ? 'bg-pink-500 border-pink-500 text-white shadow-md shadow-pink-200'
-                  : 'bg-white border-stone-200 text-stone-600 hover:border-pink-300 hover:text-pink-600'
+                  ? sugarRow
+                    ? 'bg-[#d84c6c] border-[#d84c6c] text-white shadow-md shadow-pink-200'
+                    : 'bg-pink-500 border-pink-500 text-white shadow-md shadow-pink-200'
+                  : sugarRow
+                    ? 'bg-pink-50 border-pink-200 text-pink-600 hover:border-[#d84c6c] hover:text-[#d84c6c]'
+                    : 'bg-white border-stone-200 text-stone-600 hover:border-pink-300 hover:text-pink-600'
               }`}
             >
               {value === opt && <Check className="w-3 h-3" />}
@@ -161,11 +167,14 @@ function OptionModal({ tea, onClose, onConfirm }: {
           <div className="px-6 -mt-2 pb-6">
             <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5 mb-4">
               <PickerRow label="尺寸 Size" options={['小', '中', '大']} value={size} onChange={setSize} />
-              {/* Temp row — hidden for iceOnly drinks */}
+              {/* 温度行 — 仅限冰饮时隐藏 */}
               {!tea.iceOnly && (
                 <PickerRow label="温度 Temp" options={['热', '冰']} value={temp} onChange={setTemp} />
               )}
-              <PickerRow label="甜度 Sugar" options={SUGARS} value={sugar} onChange={setSugar} />
+              {/* 糖度行 — 仅当 sugarChoice=true 时显示 */}
+              {hasSugar && (
+                <PickerRow label="糖度选择 Sugar" options={SUGARS} value={sugar} onChange={setSugar} sugarRow />
+              )}
             </div>
 
             {/* Confirm */}
@@ -554,7 +563,7 @@ function App() {
                       <div className="flex-1">
                         <h4 className="font-bold text-stone-800 text-lg">{item.name}</h4>
                         <p className="text-stone-500 text-sm mb-2">
-                          {item.temperature} · {item.sugar} · {item.size === 'M' ? '中杯' : '大杯'}
+                          {item.temperature}{item.sugar ? ` · ${item.sugar}` : ''} · {item.size === 'M' ? '中杯' : '大杯'}
                         </p>
                         <p className="font-black text-pink-600">¥{item.price}</p>
                       </div>

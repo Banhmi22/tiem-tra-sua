@@ -301,6 +301,13 @@ function App() {
     setIsSending(true);
 
     // Build cart summary
+    const now = new Date();
+    const orderTime = now.toLocaleString('vi-VN', {
+      hour: '2-digit', minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour12: false,
+    }).replace(',', '');
+
     const itemLines = cart.map(item =>
       `  • ${item.name} - ${item.temperature} - ${item.sugar || '无糖度'} - ${item.sizeLabel} - ¥${item.price} x${item.quantity}`
     ).join('\n');
@@ -308,6 +315,7 @@ function App() {
     const message =
 `🔔 CÓ ĐƠN HÀNG MỚI!
 👤 Người đặt: ${checkoutForm.name.trim() || 'Khách không để lại tên'}
+🕒 Thời gian: ${orderTime}
 
 🧋 Sản phẩm:\n${itemLines}\n💰 Tổng: ¥${cartTotal}
 

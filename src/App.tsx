@@ -213,27 +213,7 @@ type CartItem = {
   quantity: number;
 };
 
-// ─── Google Sheets Web App ───────────────────────────────────────────────────
-const GSHEET_URL =
-  'https://script.google.com/macros/s/AKfycbyXzTDzJQcaXnYV0PPrFPRUDs1Pc-v9o4hCwJ-Dx4IxuaV9rMzy2JqalhSxy38i12cj/exec';
 
-async function sendToGSheet(cartItems: CartItem[]) {
-  const items = cartItems.map(item => ({
-    name: item.name,
-    quantity: item.quantity,
-    price: item.price,
-  }));
-  try {
-    await fetch(GSHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
-    });
-  } catch (_) {
-    // Gửi GSheet thất bại — không block luồng chính
-  }
-}
 
 function App() {
   const { teas, storeOpen, loading } = useStoreData();
@@ -246,6 +226,7 @@ function App() {
   const [isWeChatModalOpen, setIsWeChatModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [formError, setFormError] = useState('');
+  const [orderSnapshot, setOrderSnapshot] = useState<{ items: CartItem[]; total: number } | null>(null);
 
   // Guard: block cart when store is closed
   const handleOpenOptions = (tea: Tea) => {
@@ -340,9 +321,8 @@ function App() {
       // Gửi thất bại vẫn cho phép tiếp tục để không block khách
     }
 
-    // Ghi đơn vào Google Sheets
-    await sendToGSheet(cart);
-
+    // Lưu snapshot trước khi xóa giỏ để hiển thị trong popup thành công
+    setOrderSnapshot({ items: [...cart], total: cartTotal });
     setIsSending(false);
     setIsCheckoutOpen(false);
     setIsOrderComplete(true);
@@ -891,25 +871,50 @@ function App() {
       {/* Order Complete Modal */}
       <AnimatePresence>
         {isOrderComplete && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
           >
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="bg-white rounded-[2rem] p-10 max-w-sm w-full text-center shadow-2xl"
+              className="bg-white rounded-[2rem] p-8 max-w-sm w-full text-center shadow-2xl flex flex-col"
             >
-              <div className="w-20 h-20 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+              {/* Icon + tiêu đề */}
+              <div className="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
                 🌸
               </div>
-              <h2 className="text-2xl font-black text-stone-900 mb-2">已提交审核！</h2>
-              <p className="text-pink-500 font-semibold mb-2">请耐心等待店主确认 🌸</p>
-              <p className="text-stone-400 text-sm mb-8 leading-relaxed">（订单已提交，请耐心等待确认）</p>
-              <button 
+              <h2 className="text-2xl font-black text-stone-900 mb-1">已收到订单！</h2>
+              <p className="text-xs text-pink-400 font-medium mb-4 leading-relaxed">好哒！美味正在全力冲刺中，请稍等一下～🌸</p>
+
+              {/* Danh sách sản phẩm */}
+              {orderSnapshot && orderSnapshot.items.length > 0 && (
+                <div className="bg-pink-50 border border-pink-100 rounded-2xl p-4 mb-5 text-left">
+                  <p className="text-xs font-bold text-pink-600 uppercase tracking-widest mb-3">🧋 Chi tiết đơn hàng</p>
+                  <div className="overflow-y-auto max-h-44 space-y-2 pr-1">
+                    {orderSnapshot.items.map(item => (
+                      <div key={item.cartId} className="flex justify-between items-start gap-2">
+                        <span className="text-sm text-stone-700 leading-snug">
+                          • {item.name}
+                          <span className="text-stone-400 text-xs ml-1">({item.sizeLabel}{item.temperature ? ` · ${item.temperature}` : ''}{item.sugar ? ` · ${item.sugar}` : ''})</span>
+                          <span className="text-stone-500 text-xs"> x{item.quantity}</span>
+                        </span>
+                        <span className="text-sm font-bold text-stone-800 whitespace-nowrap">¥{item.price * item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Divider + Total */}
+                  <div className="border-t border-pink-200 mt-3 pt-3 flex justify-between items-center">
+                    <span className="text-sm font-bold text-stone-600">合计 (Total)</span>
+                    <span className="text-lg font-black text-[#d84c6c]">¥{orderSnapshot.total}</span>
+                  </div>
+                </div>
+              )}
+
+              <button
                 onClick={() => setIsOrderComplete(false)}
                 className="w-full bg-stone-900 text-white font-bold py-3.5 rounded-xl hover:bg-stone-800 transition"
               >

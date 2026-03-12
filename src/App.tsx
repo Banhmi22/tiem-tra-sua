@@ -41,9 +41,17 @@ function MenuCard({ tea, index, onOpenOptions }: {
       {/* Description */}
       <p className="text-xs text-stone-400 leading-relaxed mb-3 line-clamp-2 px-1">{tea.desc}</p>
 
-      {/* Price — shows starting (S) price */}
+      {/* Price — shows starting price from first available size */}
       <p className="font-black text-xl text-stone-800 mb-4">
-        <span className="text-base text-pink-500 mr-0.5">¥</span>{tea.prices['S']}
+        <span className="text-base text-pink-500 mr-0.5">¥</span>
+        {(() => {
+          const sz = tea.availableSizes;
+          if (sz && typeof sz === 'object') {
+            const first = (['S','M','L'] as const).find(k => sz[k] === true);
+            if (first) return tea.prices[first];
+          }
+          return tea.prices.S;
+        })()}
         <span className="text-xs font-medium text-stone-400 ml-1">起</span>
       </p>
 
@@ -70,18 +78,32 @@ function OptionModal({ tea, onClose, onConfirm }: {
   onClose: () => void;
   onConfirm: (item: any) => void;
 }) {
-  const [size, setSize]   = useState<string>('中');
+  // ── Read availableSizes from Firebase (stored as {S:bool, M:bool, L:bool}) ───
+  // This format is Firebase-native and never gets corrupted unlike arrays.
+  const SIZE_ORDER: Array<'S'|'M'|'L'> = ['S', 'M', 'L'];
+  const SIZE_LABEL: Record<string, string>  = { S: '小', M: '中', L: '大' };
+  const SIZE_PRICE: Record<string, number>  = { S: tea.prices.S, M: tea.prices.M, L: tea.prices.L };
+
+  // Derive the list of available size keys in order S→M→L
+  const availableKeys: Array<'S'|'M'|'L'> = (() => {
+    const sz = tea.availableSizes;
+    if (!sz || typeof sz !== 'object') return ['M'];   // dữ liệu cũ → chỉ hiện 中
+    const keys = SIZE_ORDER.filter(k => sz[k] === true);
+    return keys.length > 0 ? keys : ['M'];             // ít nhất phải có 1 size
+  })();
+
+  // Human-readable labels: ['小','中'] etc.
+  const sizeOptions = availableKeys.map(k => SIZE_LABEL[k]);
+
+  const [size, setSize]   = useState<string>(sizeOptions[0]);
   const [sugar, setSugar] = useState('全糖');
   const [temp, setTemp]   = useState('冰');
 
   const hasSugar = tea.sugarChoice === true;
 
-  const priceMap: Record<string, number> = {
-    '小': tea.prices.S,
-    '中': tea.prices.M,
-    '大': tea.prices.L,
-  };
-  const price = priceMap[size] ?? tea.prices.M;
+  // Price of currently selected size — find key matching the selected label
+  const selectedKey = availableKeys.find(k => SIZE_LABEL[k] === size) ?? availableKeys[0];
+  const price = SIZE_PRICE[selectedKey] ?? tea.prices.M;
 
   const sizeLabelMap: Record<string, string> = {
     '小': '小杯',
@@ -173,7 +195,7 @@ function OptionModal({ tea, onClose, onConfirm }: {
           {/* Pickers */}
           <div className="px-6 -mt-2 pb-6">
             <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5 mb-4">
-              <PickerRow label="尺寸 Size" options={['小', '中', '大']} value={size} onChange={setSize} />
+              <PickerRow label="尺寸 Size" options={sizeOptions} value={size} onChange={setSize} />
               {/* 温度行 — 仅限冰饮时隐藏 */}
               {!tea.iceOnly && (
                 <PickerRow label="温度 Temp" options={['热', '冰']} value={temp} onChange={setTemp} />

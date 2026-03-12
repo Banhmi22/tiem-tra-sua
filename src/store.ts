@@ -9,6 +9,8 @@ export type Tea = {
   name: string;
   desc: string;
   prices: { S: number; M: number; L: number };
+  // Stored as plain object {S:bool,M:bool,L:bool} in Firebase (never as array)
+  availableSizes?: { S?: boolean; M?: boolean; L?: boolean };
   image: string;
   animal: 'cat' | 'rabbit';
   iceOnly: boolean;
